@@ -1,5 +1,5 @@
 import pytest
-from calculator-app import app  
+from calculator_app import app
 
 @pytest.fixture
 def client():
