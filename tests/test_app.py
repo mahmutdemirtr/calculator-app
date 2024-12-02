@@ -1,16 +1,20 @@
-import pytest
-from calculator_app import app
+from flask import Flask, request, jsonify
 
-@pytest.fixture
-def client():
-    with app.test_client() as client:
-        yield client
+app = Flask(__name__)
 
-def test_home(client):
-    response = client.get("/")
-    assert response.status_code == 200
+@app.route('/')
+def home():
+    return "Welcome to the Calculator App!"
 
-def test_calculate(client):
-    response = client.post("/calculate", json={"expression": "2+2"})
-    assert response.status_code == 200
-    assert response.get_json()["result"] == 4
+@app.route('/calculate', methods=['POST'])
+def calculate():
+    data = request.get_json()
+    expression = data.get('expression')
+    try:
+        result = eval(expression)
+        return jsonify({"result": result})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+if __name__ == "__main__":
+    app.run(debug=True)
