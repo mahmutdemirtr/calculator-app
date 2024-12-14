@@ -1,20 +1,25 @@
-from flask import Flask, request, jsonify
+import pytest
+from app import app  # Flask uygulamanızı import ettik
 
-app = Flask(__name__)
+# Flask test client'ını sağlayan bir fixture
+@pytest.fixture
+def client():
+    with app.test_client() as client:
+        yield client
 
-@app.route('/')
-def home():
-    return "Welcome to the Calculator App!"
+# Test: Ana sayfaya gidip doğru mesajı alıp almadığımızı kontrol edelim
+def test_homepage(client):
+    response = client.get('/')
+    assert response.data == b"Welcome to the Calculator App!"  # Geri dönen mesajı kontrol et
 
-@app.route('/calculate', methods=['POST'])
-def calculate():
-    data = request.get_json()
-    expression = data.get('expression')
-    try:
-        result = eval(expression)
-        return jsonify({"result": result})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 400
+# Test: Basit bir hesaplama işlemi yapalım (örneğin, 3 + 5)
+def test_calculate(client):
+    response = client.post('/calculate', json={'expression': '3+5'})
+    assert response.status_code == 200  # 200 OK döndürmesini bekliyoruz
+    assert response.json['result'] == 8  # Hesaplama sonucunun doğru olması gerek
 
-if __name__ == "__main__":
-    app.run(debug=True)
+# Test: Hatalı bir hesaplama ile hata mesajı döndüğünü kontrol edelim
+def test_calculate_invalid_expression(client):
+    response = client.post('/calculate', json={'expression': '3/0'})
+    assert response.status_code == 400  # Hata kodu döndürmesini bekliyoruz
+    assert 'error' in response.json  # JSON yanıtında 'error' anahtarının bulunması gerek
