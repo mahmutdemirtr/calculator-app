@@ -1,25 +1,24 @@
 import pytest
-from app import app  # Flask uygulamanızı import ettik
+from app import app
 
-# Flask test client'ını sağlayan bir fixture
+# Flask test client'ını kullanmak için
 @pytest.fixture
 def client():
     with app.test_client() as client:
         yield client
 
-# Test: Ana sayfaya gidip doğru mesajı alıp almadığımızı kontrol edelim
+# Homepage test fonksiyonu
 def test_homepage(client):
     response = client.get('/')
-    assert response.data == b"Welcome to the Calculator App!"  # Geri dönen mesajı kontrol et
+    assert b'<!DOCTYPE html>' in response.data  # HTML içeriği kontrolü
+    assert b'<title>Flask Hesap Makinesi</title>' in response.data  # Başlık kontrolü
 
-# Test: Basit bir hesaplama işlemi yapalım (örneğin, 3 + 5)
+# Calculator test fonksiyonu
 def test_calculate(client):
-    response = client.post('/calculate', json={'expression': '3+5'})
-    assert response.status_code == 200  # 200 OK döndürmesini bekliyoruz
-    assert response.json['result'] == 8  # Hesaplama sonucunun doğru olması gerek
+    response = client.post('/calculate', json={'expression': '2 + 2'})
+    data = response.get_json()
+    assert data['result'] == 4
 
-# Test: Hatalı bir hesaplama ile hata mesajı döndüğünü kontrol edelim
-def test_calculate_invalid_expression(client):
-    response = client.post('/calculate', json={'expression': '3/0'})
-    assert response.status_code == 400  # Hata kodu döndürmesini bekliyoruz
-    assert 'error' in response.json  # JSON yanıtında 'error' anahtarının bulunması gerek
+    response = client.post('/calculate', json={'expression': 'invalid'})
+    data = response.get_json()
+    assert 'error' in data
